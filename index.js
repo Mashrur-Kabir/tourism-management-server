@@ -65,6 +65,57 @@ async function run() {
         res.send(result); //server response
     });
 
+    // Get spots added by a specific user
+    app.get('/oneTopSpots', async (req, res) => {
+      const email = req.query.email; // Extract email from query
+      console.log(email);
+      if (!email) {
+          return res.status(400).send({ message: "Email is required" });
+      }
+  
+      try {
+          const query = { user_email: email }; // Match spots added by the user
+          const spots = await tourCollection.find(query).toArray();
+          console.log(spots);
+          res.send(spots);
+      } catch (error) {
+          console.error("Error fetching spots:", error);
+          res.status(500).send({ message: "Failed to fetch spots" });
+      }
+  });
+
+    // delete spots of that specific user
+    app.delete('/delSpots/:id', async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id)};
+      const result = await tourCollection.deleteOne(query);
+      res.send(result);
+    }) 
+
+    // update spot of that specific user
+    app.put('/updateSpot/:id', async (req, res) => {
+      const id = req.params.id;
+      const filter = { _id: new ObjectId(id) };
+      const options = { upsert: true };
+      const updatedSpot = req.body;
+      const newSpot = {
+        $set: {
+          image: updatedSpot.image,
+          tourists_spot_name: updatedSpot.tourists_spot_name,
+          country_name: updatedSpot.country_name,
+          location: updatedSpot.location,
+          description: updatedSpot.description,
+          average_cost: updatedSpot.average_cost,
+          seasonality: updatedSpot.seasonality,
+          travel_time: updatedSpot.travel_time,
+          total_visitors: updatedSpot.total_visitors,
+        },
+      };
+
+      const result = await tourCollection.updateOne(filter, newSpot, options);
+      res.send(result);
+    })
+
 
     await client.db("admin").command({ ping: 1 });
     console.log("Pinged your deployment. You successfully connected to MongoDB!");
